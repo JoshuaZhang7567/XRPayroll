@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
@@ -23,6 +25,14 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
+os.makedirs("static", exist_ok=True)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+@app.get("/", include_in_schema=False)
+def read_root():
+    return RedirectResponse(url="/static/index.html")
 
 @app.on_event("startup")
 def on_startup():
