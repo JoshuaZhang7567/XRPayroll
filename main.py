@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 import secrets
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from models import init_db, get_db, User, Receipt
 from ai_extractor import extract_receipt_info

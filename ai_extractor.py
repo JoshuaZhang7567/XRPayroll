@@ -1,7 +1,10 @@
 import os
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+
+load_dotenv()
 
 class ReceiptData(BaseModel):
     amount: float = Field(description="The total transaction amount on the receipt.")
