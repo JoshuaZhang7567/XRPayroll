@@ -1,7 +1,5 @@
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
@@ -25,22 +23,14 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
-os.makedirs("static", exist_ok=True)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-@app.get("/", include_in_schema=False)
-def read_root():
-    return RedirectResponse(url="/static/index.html")
 
 @app.on_event("startup")
 def on_startup():
     init_db()
 
 @app.post("/users", summary="Create a new team member with their XRPL address")
-def create_user(name: str = Form(...), xrpl_address: str = Form(...), db: Session = Depends(get_db)):
-    user = User(name=name, xrpl_address=xrpl_address)
+def create_user(name: str = Form(...), password: str = Form(...), xrpl_address: str = Form(...), db: Session = Depends(get_db)):
+    user = User(name=name, password=password, xrpl_address=xrpl_address)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -53,12 +43,16 @@ def get_users(db: Session = Depends(get_db)):
 @app.post("/submit-receipt", summary="Submit a receipt image for AI extraction and pending approval")
 async def submit_receipt(
     submitter_id: int = Form(...),
+    password: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
     user = db.query(User).filter(User.id == submitter_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Submitter not found")
+    
+    if user.password != password:
+        raise HTTPException(status_code=401, detail="Incorrect password")
 
     file_extension = file.filename.split(".")[-1]
     safe_filename = f"{secrets.token_hex(8)}.{file_extension}"

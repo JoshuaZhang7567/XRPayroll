@@ -10,6 +10,7 @@ This application allows a club or organization team members to submit receipts f
 - **On-chain Logging**: Encodes metadata directly onto XRPL.
 
 ## Setup
+### 1. Backend API
 1. Clone the repository.
 2. Setup the virtual environment and install requirements:
 ```bash
@@ -22,7 +23,20 @@ pip install -r requirements.txt
 ```bash
 uvicorn main:app --reload
 ```
-5. View the endpoints and test directly through the Swagger UI: `http://127.0.0.1:8000/docs`
+*(The backend runs on http://127.0.0.1:8000)*
+
+### 2. Frontend React App
+1. Open a new terminal tab.
+2. Navigate into the frontend folder:
+```bash
+cd frontend
+```
+3. Install the dependencies and start the app:
+```bash
+npm install
+npm run dev
+```
+4. Open your browser to the local URL provided (usually `http://localhost:5173`) to view the beautiful modern interface!
 
 ## Testing
 Run `python test_flow.py` to simulate a fully automated sequence involving user creation, mock receipt uploading, simulated AI processing, and an automated mock-reimbursement on the XRP Testnet.

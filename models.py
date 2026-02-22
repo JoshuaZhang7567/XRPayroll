@@ -10,6 +10,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    password = Column(String, nullable=False, server_default="password")
     xrpl_address = Column(String, unique=True, index=True)
 
     receipts = relationship("Receipt", back_populates="submitter")
