@@ -12,6 +12,7 @@ class User(Base):
     name = Column(String, index=True)
     password = Column(String, nullable=False, server_default="password")
     xrpl_address = Column(String, unique=True, index=True)
+    discord_id = Column(String, unique=True, index=True, nullable=True)
 
     receipts = relationship("Receipt", back_populates="submitter")
 

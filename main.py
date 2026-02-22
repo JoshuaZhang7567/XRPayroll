@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 def on_startup():
@@ -149,3 +151,59 @@ def approve_receipt(receipt_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Reimbursement failed: {str(e)}")
 
 # Add script execution to run app: uvicorn main:app --reload
+
+@app.post("/bot/link", summary="Link a Discord ID to a user profile")
+def link_discord(discord_id: str = Form(...), name: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.name.ilike(name)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.password != password:
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    
+    user.discord_id = discord_id
+    db.commit()
+    db.refresh(user)
+    return {"message": "Linked successfully", "user_id": user.id, "name": user.name}
+
+@app.get("/bot/user/{discord_id}", summary="Get user by Discord ID")
+def get_user_by_discord(discord_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not linked")
+    return {"id": user.id, "name": user.name}
+
+@app.post("/bot/submit", summary="Bot submits a receipt")
+async def bot_submit_receipt(
+    discord_id: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.discord_id == discord_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Discord user not linked")
+
+    file_extension = file.filename.split(".")[-1]
+    safe_filename = f"{secrets.token_hex(8)}.{file_extension}"
+    file_path = os.path.join("uploads", safe_filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+        
+    try:
+        extracted_data = extract_receipt_info(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract info: {str(e)}")
+    
+    receipt = Receipt(
+        amount=extracted_data.amount,
+        merchant=extracted_data.merchant,
+        date_extracted=extracted_data.date,
+        image_path=file_path,
+        submitter_id=user.id,
+        status="pending"
+    )
+    db.add(receipt)
+    db.commit()
+    db.refresh(receipt)
+    
+    return {"receipt": {"id": receipt.id, "amount": receipt.amount, "merchant": receipt.merchant, "date": receipt.date_extracted}}

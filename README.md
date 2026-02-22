@@ -36,7 +36,21 @@ cd frontend
 npm install
 npm run dev
 ```
-4. Open your browser to the local URL provided (usually `http://localhost:5173`) to view the beautiful modern interface!
+### 3. Discord Bot Integration
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a New Application.
+2. In the **Bot** tab, generate a token, and toggle **"Message Content Intent"** to ON.
+3. Add the token to your `.env` file:
+```env
+DISCORD_TOKEN=your_bot_token_here
+```
+4. Invite the bot to your private server using the OAuth2 URL Generator (check the `bot` scope).
+5. Open a new terminal tab, activate the virtual environment, and run the bot script (MacOS users might need to pass the `certifi` SSL path):
+```bash
+source venv/bin/activate
+export SSL_CERT_FILE=$(python3 -m certifi)
+python bot.py
+```
+6. Send a Direct Message to your bot on Discord to link your account and submit receipts via image attachments!
 
 ## Testing
 Run `python test_flow.py` to simulate a fully automated sequence involving user creation, mock receipt uploading, simulated AI processing, and an automated mock-reimbursement on the XRP Testnet.
